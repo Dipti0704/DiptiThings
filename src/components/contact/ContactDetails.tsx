@@ -3,7 +3,7 @@ import { Mail } from 'lucide-react';
 import React from 'react';
 
 import Github from '../svgs/Github';
-import X from '../svgs/X';
+import LinkedIn from '../svgs/LinkedIn';
 
 export default function ContactDetails() {
   return (
@@ -23,13 +23,13 @@ export default function ContactDetails() {
       </p>
       <div className="flex flex-wrap items-center gap-4 pt-2">
         <a
-          href={contactInfo.x.href}
+          href={contactInfo.linkedin.href}
           target="_blank"
           rel="noopener noreferrer"
           className="hover:text-foreground inline-flex items-center gap-2 transition-colors"
         >
-          <X />
-          {contactInfo.x.handle}
+          <LinkedIn />
+          {contactInfo.linkedin.handle}
         </a>
         <a
           href={contactInfo.github.href}
