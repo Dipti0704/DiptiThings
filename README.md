@@ -1,6 +1,6 @@
-# Taranpreet Singh — Portfolio
+# Dipti Hatwar — Portfolio
 
-Personal portfolio built with Next.js, Tailwind CSS, and shadcn/ui.
+Personal portfolio showcasing projects in AI/ML, Agentic AI, Automations, and Data Engineering, built with Next.js, Tailwind CSS, and shadcn/ui.
 
 ## Run locally
 
@@ -13,21 +13,18 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Deploy on Vercel
 
-Repo: [github.com/taran1610/taranships](https://github.com/taran1610/taranships)
+Repo: [github.com/Dipti0704/MY-PORTFOLIO](https://github.com/Dipti0704/MY-PORTFOLIO)
 
 ### Easiest: connect GitHub (recommended)
 
 1. Go to [vercel.com/new](https://vercel.com/new).
-2. Import **taran1610/taranships**.
+2. Import **Dipti0704/MY-PORTFOLIO** (or your repository's name).
 3. Click **Deploy** (defaults are fine).
 4. Every push to `main` redeploys automatically.
 
 ### CLI (run one command at a time)
 
-Do **not** paste multiple lines with `# comments` — zsh can throw `missing end of string` or `Can't deploy more than one path`.
-
 ```bash
-cd /Users/sonal/taranships
 npx vercel login
 ```
 
@@ -49,14 +46,11 @@ Optional env var in Vercel → Settings → Environment Variables:
 
 - `NEXT_PUBLIC_URL` = `https://your-project.vercel.app` (for social link previews)
 
-### Add to X
+## Customization
 
-1. Open **X → Profile → Edit profile**.
-2. Set **Website** to your deployed URL.
-3. Optional: pin a post linking to a project (Gloomberg, Compass, etc.).
+Most customizable data is located in `src/lib/site.ts` which drives the homepage, social configurations, projects lists, obsessions list, and tools list:
 
-When someone opens your link from X, they get a large preview card (title, description, image) from the site metadata.
+- Central Site Settings: `src/lib/site.ts`
+- Additional config files: `src/config/`
+- Resume File: `public/Dipti_Hatwar_Resume.pdf`
 
-## Customize
-
-Edit files in `src/config/` — `Hero.tsx`, `About.tsx`, `Projects.tsx`, `Experience.tsx`, etc.
