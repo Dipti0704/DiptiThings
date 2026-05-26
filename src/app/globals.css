@@ -1,0 +1,134 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f6f1e8;
+  --foreground: #15130f;
+  --muted: #6b655d;
+  --faint: #a39d94;
+  --accent: #e85d2c;
+  --accent-soft: #f6c89f;
+  --border: #e6e0d5;
+  --surface: #ffffff;
+  --ink: #15130f;
+  --ink-soft: #2a261f;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-border: var(--border);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --font-sans: var(--font-geist-sans);
+  --font-display: var(--font-bricolage);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  color: var(--ink);
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Decorative blobs */
+.blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.blob-peach {
+  background: radial-gradient(circle, #f6a37a 0%, transparent 70%);
+}
+
+.blob-blue {
+  background: radial-gradient(circle, #b9d0e6 0%, transparent 70%);
+}
+
+.blob-cream {
+  background: radial-gradient(circle, #ffe7c5 0%, transparent 70%);
+}
+
+/* Marquee animation */
+@keyframes marquee-left {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+@keyframes marquee-right {
+  from { transform: translate3d(-50%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+
+.marquee-left {
+  animation: marquee-left 38s linear infinite;
+}
+
+.marquee-right {
+  animation: marquee-right 42s linear infinite;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+/* Subtle entrance */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-up {
+  animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Hairline pattern for card backgrounds */
+.dot-pattern {
+  background-image: radial-gradient(circle, currentColor 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+/* Outlined text utility for marquee */
+.text-outline {
+  color: transparent !important;
+  -webkit-text-stroke: 2.5px var(--color-foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-left,
+  .marquee-right,
+  .fade-up {
+    animation: none !important;
+  }
+}
