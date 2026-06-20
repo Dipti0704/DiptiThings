@@ -116,6 +116,11 @@ export const obsessions = [
     description:
       "Coordinating placement cell activities at Scaler, collaborating with industry recruiters, and driving smooth placement processes.",
   },
+  {
+    title: "Product Management",
+    description:
+      "Thinking product strategy, building roadmaps, and aligning technical execution with customer needs to deliver high-impact products.",
+  },
 ];
 
 export const toolbox = {
