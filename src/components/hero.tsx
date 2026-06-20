@@ -14,13 +14,6 @@ export function Hero() {
 
       <div className="relative z-10 fade-up">
         <div className="flex flex-wrap items-center gap-3 text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5">
-            <span className="relative inline-flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-70" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            </span>
-            {site.availability}
-          </span>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5">
             <svg
               width="11"
