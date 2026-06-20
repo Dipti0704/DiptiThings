@@ -33,8 +33,7 @@ export function SayHello() {
         </h2>
 
         <p className="mt-8 max-w-lg text-base leading-relaxed text-background/70 sm:text-lg">
-          Open to collaborations on AI/ML, Agentic AI, automations, and ambitious
-          zero-to-one ideas from Bengaluru. References and live demos available on request.
+          Open to connecting with builders, founders, product thinkers, and fellow learners. I enjoy exchanging ideas, gaining new perspectives, and learning from people who are passionate about creating meaningful impact.
         </p>
 
         <ul className="mt-14 grid gap-4 sm:grid-cols-2">

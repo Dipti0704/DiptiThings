@@ -15,8 +15,8 @@ export function Obsessions() {
           Obsessions.
         </h2>
         <p className="max-w-md text-base leading-relaxed text-muted">
-          The spaces I think about most days — where I&apos;m placing bets,
-          writing code, and looking for collaborators.
+          
+          The spaces I think about most days — topics I enjoy exploring, learning about, and staying curious about in my free time.
         </p>
       </div>
 

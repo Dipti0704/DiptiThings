@@ -7,7 +7,7 @@ export function Footer() {
         <p>
           © {new Date().getFullYear()} {site.name} · Bengaluru, India
         </p>
-        <p>v2.0 · Shipped Jan 2026</p>
+        <p></p>
       </div>
     </footer>
   );

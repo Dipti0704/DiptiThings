@@ -17,7 +17,7 @@ export function Nav() {
       >
         <span className="mr-1.5 inline-block h-1.5 w-1.5 translate-y-[-1px] rounded-full bg-accent" />
         dipti
-        <span className="text-faint">.ai</span>
+        <span className="text-faint">-things</span>
       </Link>
 
       <div className="hidden items-center gap-7 text-xs font-medium uppercase tracking-[0.18em] text-muted sm:flex">
@@ -38,7 +38,7 @@ export function Nav() {
         rel="noopener noreferrer"
         className="inline-flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-sm font-medium text-background transition-transform hover:-translate-y-0.5"
       >
-        Résumé <span aria-hidden>↗</span>
+        Resume <span aria-hidden>↗</span>
       </a>
     </nav>
   );
