@@ -1,14 +1,7 @@
 import { projects } from "@/lib/site";
 import { ProjectCard } from "@/components/project-card";
 
-const featuredSlugs = ["talentsearch-ai", "retail-data-platform", "agentic-ai-dev"];
-
 export function Shipped() {
-  const featured = featuredSlugs
-    .map((slug) => projects.find((p) => p.slug === slug)!)
-    .filter(Boolean);
-  const rest = projects.filter((p) => !featuredSlugs.includes(p.slug));
-
   return (
     <section
       id="work"
@@ -21,23 +14,13 @@ export function Shipped() {
           Things I&apos;ve <span className="text-accent">shipped.</span>
         </h2>
         <p className="max-w-md text-base leading-relaxed text-muted">
-          {projects.length} products from idea to App Store and production —
-          each solving a real problem in finance, wellness, product
-          intelligence, or RWA.
+          {projects.length} Projects I&apos;ve built and shipped as part of my learning journey—exploring interesting ideas, solving practical problems, and turning curiosity into working products.
         </p>
       </div>
 
-      <div className="mt-14 grid gap-5 sm:grid-cols-3 sm:grid-rows-[auto_auto_auto]">
-        <div className="sm:col-span-2 sm:row-span-2">
-          <ProjectCard project={featured[0]} size="large" />
-        </div>
-        <div className="flex flex-col gap-5 sm:col-span-1 sm:row-span-2">
-          <ProjectCard project={featured[1]} />
-          <ProjectCard project={featured[2]} />
-        </div>
-
-        {rest.map((p) => (
-          <ProjectCard key={p.slug} project={p} />
+      <div className="mt-14 grid gap-6 sm:grid-cols-2">
+        {projects.map((project) => (
+          <ProjectCard key={project.slug} project={project} />
         ))}
       </div>
     </section>

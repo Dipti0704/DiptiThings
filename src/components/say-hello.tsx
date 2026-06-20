@@ -59,7 +59,7 @@ export function SayHello() {
           <ContactCard
             href={site.links.resume}
             icon={<FileIcon />}
-            name="Résumé"
+            name="Resume"
             handle={`PDF · ${new Date().getFullYear()}`}
             accent
           />

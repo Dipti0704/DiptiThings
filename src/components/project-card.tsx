@@ -5,18 +5,20 @@ export function ProjectCard({
   size = "small",
 }: {
   project: Project;
-  size?: "small" | "large";
+  size?: "small" | "medium" | "large";
 }) {
   const isLarge = size === "large";
+  const isMedium = size === "medium";
+  const hasBanner = isLarge || isMedium;
   const primary = project.live ?? project.appStore ?? project.github;
   const cardClassName =
     "group relative flex flex-col overflow-hidden rounded-3xl border border-border bg-surface transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_-30px_rgba(0,0,0,0.25)]";
 
-  const inner = (
-    <>
-      {isLarge ? (
+  return (
+    <article className={cardClassName}>
+      {hasBanner ? (
         <div
-          className="relative h-72 overflow-hidden sm:h-96"
+          className={`relative overflow-hidden ${isLarge ? "h-72 sm:h-96" : "h-48 sm:h-56"}`}
           style={{
             background: `linear-gradient(135deg, ${project.gradient[0]} 0%, ${project.gradient[1]} 100%)`,
           }}
@@ -29,7 +31,18 @@ export function ProjectCard({
       <div className={`flex flex-1 flex-col p-6 ${isLarge ? "sm:p-7" : ""}`}>
         <div className="flex items-start justify-between gap-3">
           <h3 className="font-display text-2xl font-bold tracking-tight text-ink">
-            {project.title}
+            {primary ? (
+              <a
+                href={primary}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline focus:outline-none after:absolute after:inset-0 after:rounded-3xl"
+              >
+                {project.title}
+              </a>
+            ) : (
+              project.title
+            )}
             {project.status ? (
               <span className="ml-2 inline-flex translate-y-[-2px] rounded-full bg-accent/15 px-2 py-0.5 align-middle text-[10px] font-semibold uppercase tracking-wider text-accent">
                 {project.status}
@@ -64,19 +77,34 @@ export function ProjectCard({
         <div className="mt-6 flex items-center justify-between border-t border-border pt-4 text-xs text-muted">
           <div className="flex items-center gap-4">
             {project.live ? (
-              <span className="inline-flex items-center gap-1 transition-colors group-hover:text-accent">
+              <a
+                href={project.live}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative z-10 inline-flex items-center gap-1 transition-colors hover:text-accent group-hover:text-accent"
+              >
                 <LinkIcon /> Live
-              </span>
+              </a>
             ) : null}
             {project.appStore ? (
-              <span className="inline-flex items-center gap-1 transition-colors group-hover:text-accent">
+              <a
+                href={project.appStore}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative z-10 inline-flex items-center gap-1 transition-colors hover:text-accent group-hover:text-accent"
+              >
                 <AppleIcon /> App Store
-              </span>
+              </a>
             ) : null}
             {project.github ? (
-              <span className="inline-flex items-center gap-1 transition-colors group-hover:text-foreground">
+              <a
+                href={project.github}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative z-10 inline-flex items-center gap-1 transition-colors hover:text-foreground group-hover:text-foreground"
+              >
                 <CodeIcon /> Code
-              </span>
+              </a>
             ) : null}
           </div>
           {primary ? (
@@ -89,23 +117,8 @@ export function ProjectCard({
           ) : null}
         </div>
       </div>
-    </>
+    </article>
   );
-
-  if (primary) {
-    return (
-      <a
-        href={primary}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={cardClassName}
-      >
-        {inner}
-      </a>
-    );
-  }
-
-  return <article className={cardClassName}>{inner}</article>;
 }
 
 function LinkIcon() {

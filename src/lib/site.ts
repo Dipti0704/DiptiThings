@@ -41,15 +41,27 @@ export type Project = {
 
 export const projects: Project[] = [
   {
+    slug: "ai-persona",
+    title: "Dipti's AI Persona",
+    subtitle: "AI voice & text recruiter assistant",
+    description:
+      "Built and deployed an AI-powered digital persona (Dipti’s AI Persona) enabling recruiters to interact with candidate info via text and voice. Features a RAG pipeline for grounded resume retrieval, agentic tool-calling, intent routing, and live Twilio/Vapi voice integration.",
+    live: "https://dipti-s-ai-persona.onrender.com/",
+    github: "https://github.com/Dipti0704/Dipti-s-AI-Persona",
+    tags: ["React.js", "FastAPI", "OpenAI API", "RAG", "Vapi", "Twilio", "Cal.com"],
+    gradient: ["#f4d6c6", "#e8b89c"],
+  },
+  {
     slug: "talentsearch-ai",
     title: "TalentSearch AI",
     subtitle: "AI hiring assistant & RAG agent",
     description:
       "An AI-powered hiring assistant using RAG and LLM agents for semantic resume retrieval, ranking, and analysis. Built on a Pinecone-based vector search pipeline with agentic workflows, reducing LLM costs and latency.",
-    github: "https://github.com/Dipti0704",
+      live: "https://talentsearchai.onrender.com/",
+      github: "https://github.com/Dipti0704/TalentSearchAI",
     tags: ["Python", "OpenAI", "Pinecone", "LangChain", "Streamlit", "RAG"],
     featured: true,
-    stars: 1,
+  
     gradient: ["#d4c4e8", "#c9a8df"],
   },
   {
@@ -58,32 +70,22 @@ export const projects: Project[] = [
     subtitle: "Production-grade HDFS data platform",
     description:
       "Designed and built a 3-layer data platform (Raw, Staging, Analytics) on HDFS using Hive and PySpark, enabling centralized processing of multi-source retail datasets. Optimizes data transformation and query performance with star schema.",
-    github: "https://github.com/Dipti0704",
+    github: "https://drive.google.com/drive/folders/1i86tLr4-5s_hUYVuffBI2Nr_9UdeNHhf",
     tags: ["PySpark", "Hive", "HDFS", "SQL", "Big Data", "Data Eng"],
     featured: true,
-    stars: 1,
+   
     gradient: ["#cdd9e5", "#e3d4c2"],
   },
   {
-    slug: "agentic-ai-dev",
-    title: "Agentic Workflows",
-    subtitle: "LangGraph & n8n business automations",
+    slug: "agentic-ai-business-system",
+    title: "Agentic AI Business System",
+    subtitle: "Local multi-agent automation platform",
     description:
-      "A suite of autonomous multi-agent systems designed using LangGraph, n8n, UiPath, and Maestro for intelligent task orchestration with human-in-the-loop systems. Streamlines complex processes and RPA.",
-    github: "https://github.com/Dipti0704",
-    tags: ["LangGraph", "n8n", "UiPath", "Maestro", "Agents", "RPA"],
+      "A production-ready Multi-Agent AI Platform powered by Ollama (Local LLM) that helps businesses automate Sales, Marketing, Copywriting, and Analytics. Integrates a user UI that routes queries to domain-specific agents for intelligent, structured output.",
+    github: "https://github.com/Dipti0704/Agentic-AI-Business-System",
+    tags: ["Python", "Flask", "HTML/CSS", "JavaScript", "Ollama", "Agents"],
     featured: true,
     gradient: ["#c8e0d2", "#a8cdb6"],
-  },
-  {
-    slug: "fraud-detection",
-    title: "Fraud Detection System",
-    subtitle: "AI/ML classification & security engine",
-    description:
-      "An end-to-end Machine Learning system developed to analyze transactions and detect fraudulent activities in real-time, utilizing advanced classification models and robust feature engineering.",
-    github: "https://github.com/Dipti0704",
-    tags: ["Python", "ML", "Pandas", "Scikit-Learn", "Security"],
-    gradient: ["#f4d6c6", "#e8b89c"],
   },
 ];
 
