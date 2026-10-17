@@ -4,18 +4,15 @@
 # image.tag / image.digest are updated by CI (.github/workflows/release.yml)
 # after the image is built, scanned and pushed — do not edit them by hand.
 image:
-  tag: sha-32b537f
-  digest: ""
-
+  tag: sha-36bb65f
+  digest: "sha256:17600aa56580f0a6f7da39be064ca887f322bd79167a4aa11132fe9ea4c3b77d"
 config:
   APP_ENV: local
   LOG_LEVEL: info
   CONTACT_DELIVERY: telegram
   OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger.tracing.svc.cluster.local:4318
-
 ingress:
   host: portfolio.localtest.me
-
 # Written by `make seal-secret` (encrypted for this cluster's controller only).
 secret:
   sealed:
