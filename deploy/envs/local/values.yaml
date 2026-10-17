@@ -1,0 +1,19 @@
+# Local kind environment. Argo CD renders the chart with this file on top of
+# deploy/helm/portfolio/values.yaml.
+#
+# image.tag / image.digest are updated by CI (.github/workflows/release.yml)
+# after the image is built, scanned and pushed — do not edit them by hand.
+image:
+  tag: sha-8bdbd5b
+  digest: "sha256:99a9c80c1cd58ad274e58ee674f3c495d6dd1a24dd12f4cb0da7515f8cd52d6b"
+config:
+  APP_ENV: local
+  LOG_LEVEL: info
+  CONTACT_DELIVERY: telegram
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger.tracing.svc.cluster.local:4318
+ingress:
+  host: portfolio.localtest.me
+# Written by `make seal-secret` (encrypted for this cluster's controller only).
+secret:
+  sealed:
+    encryptedData: {}

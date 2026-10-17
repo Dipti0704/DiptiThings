@@ -1,0 +1,184 @@
+# kube-prometheus-stack trimmed for a single-node laptop cluster.
+
+crds:
+  enabled: false   # installed by the prometheus-crds Argo CD app
+
+# Control-plane components in kind do not expose metrics on reachable
+# addresses; scraping them would only produce permanently-down targets.
+kubeEtcd: { enabled: false }
+kubeScheduler: { enabled: false }
+kubeControllerManager: { enabled: false }
+kubeProxy: { enabled: false }
+
+prometheus:
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [prometheus.localtest.me]
+  prometheusSpec:
+    retention: 2d
+    # Discover ServiceMonitors/PrometheusRules from every namespace,
+    # not only those labelled for this Helm release.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    resources:
+      requests: { cpu: 100m, memory: 400Mi }
+      limits: { memory: 1Gi }
+
+# The kind node is a container in Docker Desktop's VM: its clock follows the
+# host and has no NTP daemon, so these node-exporter alerts are permanently
+# (and meaninglessly) firing locally.
+defaultRules:
+  disabled:
+    NodeClockNotSynchronising: true
+    NodeClockSkewDetected: true
+
+alertmanager:
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [alertmanager.localtest.me]
+  alertmanagerSpec:
+    # Telegram credentials (SealedSecret in deploy/platform/secrets), mounted
+    # at /etc/alertmanager/secrets/alertmanager-telegram/.
+    secrets: [alertmanager-telegram]
+    resources:
+      requests: { cpu: 10m, memory: 32Mi }
+      limits: { memory: 128Mi }
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: telegram
+      group_by: [alertname, namespace]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      routes:
+        # Always-firing heartbeat; it needs an external dead man's switch
+        # (e.g. healthchecks.io) to be useful, so it is not paged locally.
+        - receiver: "null"
+          matchers: ['alertname = "Watchdog"']
+        - receiver: "null"
+          matchers: ['alertname = "InfoInhibitor"']
+        - receiver: "null"
+          matchers: ['severity = "info"']
+        # Critical: notify quickly and remind hourly until resolved.
+        - receiver: telegram
+          matchers: ['severity = "critical"']
+          group_wait: 10s
+          repeat_interval: 1h
+        # Everything else (warning) falls through to the default receiver.
+    inhibit_rules:
+      # A critical alert silences the warning of the same alert/namespace.
+      - source_matchers: ['severity = "critical"']
+        target_matchers: ['severity =~ "warning|info"']
+        equal: [namespace, alertname]
+      - source_matchers: ['severity = "warning"']
+        target_matchers: ['severity = "info"']
+        equal: [namespace, alertname]
+      # If Prometheus cannot scrape the app, its other alerts are noise.
+      - source_matchers: ['alertname = "PortfolioMetricsDown"']
+        target_matchers: ['component = "portfolio"', 'alertname != "PortfolioMetricsDown"']
+      - source_matchers: ['alertname = "InfoInhibitor"']
+        target_matchers: ['severity = "info"']
+        equal: [namespace]
+    receivers:
+      - name: "null"
+      - name: telegram
+        telegram_configs:
+          - bot_token_file: /etc/alertmanager/secrets/alertmanager-telegram/bot-token
+            chat_id_file: /etc/alertmanager/secrets/alertmanager-telegram/chat-id
+            parse_mode: HTML
+            send_resolved: true
+            message: |-
+              {{ if eq .Status "firing" }}🔥 FIRING{{ else }}✅ RESOLVED{{ end }} <b>{{ .CommonLabels.alertname }}</b> [{{ .CommonLabels.severity }}]
+              {{ range .Alerts }}• {{ .Annotations.summary }}{{ if .Labels.pod }} (pod {{ .Labels.pod }}){{ end }}
+              {{ if .Annotations.runbook_url }}Runbook: {{ .Annotations.runbook_url }}{{ end }}
+              {{ end }}
+
+# Platform alerts: the delivery and runtime pieces the app depends on.
+additionalPrometheusRulesMap:
+  platform:
+    groups:
+      - name: platform.gitops
+        rules:
+          - alert: ArgoCDAppUnhealthy
+            expr: argocd_app_info{health_status!~"Healthy|Progressing"} == 1
+            for: 10m
+            labels: { severity: warning, component: platform }
+            annotations:
+              summary: Argo CD application {{ $labels.name }} is {{ $labels.health_status }}
+              runbook_url: https://github.com/Dipti0704/DiptiThings/blob/main/docs/RUNBOOK.md#argocd-app-unhealthy
+          - alert: ArgoCDAppOutOfSync
+            # Auto-sync should converge within a minute; staying OutOfSync
+            # means syncs are failing and Git is no longer what runs.
+            expr: argocd_app_info{sync_status!="Synced"} == 1
+            for: 15m
+            labels: { severity: warning, component: platform }
+            annotations:
+              summary: Argo CD application {{ $labels.name }} has been {{ $labels.sync_status }} for 15 minutes
+              runbook_url: https://github.com/Dipti0704/DiptiThings/blob/main/docs/RUNBOOK.md#argocd-app-unhealthy
+          - alert: ArgoCDSyncFailed
+            expr: increase(argocd_app_sync_total{phase=~"Error|Failed"}[10m]) > 0
+            labels: { severity: warning, component: platform }
+            annotations:
+              summary: Argo CD sync of {{ $labels.name }} failed
+              runbook_url: https://github.com/Dipti0704/DiptiThings/blob/main/docs/RUNBOOK.md#argocd-app-unhealthy
+          - alert: ArgoCDNotReporting
+            expr: absent(argocd_app_info)
+            for: 10m
+            labels: { severity: critical, component: platform }
+            annotations:
+              summary: No metrics from the Argo CD application controller; deployments and drift correction may have stopped
+              runbook_url: https://github.com/Dipti0704/DiptiThings/blob/main/docs/RUNBOOK.md#argocd-app-unhealthy
+      - name: platform.runtime
+        rules:
+          - alert: TraefikDown
+            expr: absent(up{job="traefik-metrics"} == 1)
+            for: 5m
+            labels: { severity: critical, component: platform }
+            annotations:
+              summary: Ingress controller is down; the portfolio is unreachable
+              runbook_url: https://github.com/Dipti0704/DiptiThings/blob/main/docs/RUNBOOK.md#traefik-down
+          - alert: SealedSecretUnsealFailed
+            expr: increase(sealed_secrets_controller_unseal_errors_total[15m]) > 0
+            labels: { severity: warning, component: platform }
+            annotations:
+              summary: The sealed-secrets controller failed to decrypt a SealedSecret (wrong key or namespace)
+              runbook_url: https://github.com/Dipti0704/DiptiThings/blob/main/docs/RUNBOOK.md#sealed-secret-unseal-failed
+          - alert: TracingBackendDown
+            expr: kube_deployment_status_replicas_available{namespace="tracing",deployment="jaeger"} < 1
+            for: 10m
+            labels: { severity: warning, component: platform }
+            annotations:
+              summary: Jaeger is unavailable; traces are being dropped
+              runbook_url: https://github.com/Dipti0704/DiptiThings/blob/main/docs/RUNBOOK.md#tracing-backend-down
+
+grafana:
+  # Admin credentials come from a SealedSecret (deploy/platform/secrets),
+  # so nothing random is generated on each render (no Argo CD drift).
+  admin:
+    existingSecret: grafana-admin
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [grafana.localtest.me]
+  sidecar:
+    dashboards:
+      searchNamespace: ALL
+  additionalDataSources:
+    - name: Jaeger
+      type: jaeger
+      uid: jaeger
+      url: http://jaeger.tracing.svc.cluster.local:16686
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 384Mi }
+
+prometheusOperator:
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { memory: 256Mi }

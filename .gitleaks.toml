@@ -1,0 +1,11 @@
+# Extend the default rules. SealedSecret ciphertext is asymmetrically
+# encrypted for the in-cluster controller and is safe to commit, but its
+# high entropy trips the generic key rule. The regex only matches the
+# sealed-secrets envelope (base64 starting "Ag", hundreds of characters), so
+# a plaintext token in the same files is still reported.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Sealed Secrets ciphertext"
+regexes = ['''^Ag[A-Za-z0-9+/]{300,}={0,2}$''']

@@ -1,0 +1,125 @@
+# Defaults shared by every environment. Environment-specific overrides live in
+# deploy/envs/<env>/values.yaml (the image tag there is written by CI).
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/dipti0704/diptithings
+  tag: ""          # set per environment by CI (sha-<commit>)
+  digest: ""       # when set, the image is pinned immutably by digest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# Non-secret runtime configuration (rendered into a ConfigMap).
+config:
+  APP_ENV: local
+  LOG_LEVEL: info
+  CONTACT_DELIVERY: telegram
+  OTEL_SERVICE_NAME: portfolio
+  OTEL_EXPORTER_OTLP_ENDPOINT: ""
+
+# Secret values. Never stored in plain text: either a SealedSecret
+# (encryptedData produced by `make seal-secret`) or a pre-existing Secret.
+secret:
+  name: portfolio-secrets
+  sealed:
+    encryptedData: {}
+
+serviceAccount:
+  create: true
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+service:
+  type: ClusterIP
+  port: 80
+
+containerPort: 3000
+
+ingress:
+  enabled: true
+  className: traefik
+  host: portfolio.localtest.me
+  # Deny /api/metrics from outside the cluster (Traefik middleware).
+  blockMetrics: true
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 192Mi
+  limits:
+    cpu: 500m
+    memory: 384Mi
+
+probes:
+  startup:
+    path: /api/health
+    failureThreshold: 30
+    periodSeconds: 2
+  liveness:
+    path: /api/health
+    periodSeconds: 10
+    failureThreshold: 3
+  readiness:
+    path: /api/ready
+    periodSeconds: 5
+    failureThreshold: 2
+
+# Graceful shutdown: keep serving while the endpoint is removed from the
+# Service, so rolling updates do not drop in-flight requests.
+preStopSleepSeconds: 5
+terminationGracePeriodSeconds: 30
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+networkPolicy:
+  enabled: true
+  ingressNamespaces: [traefik, monitoring]
+  tracingNamespace: tracing
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+    interval: 15s
+  prometheusRule:
+    enabled: true
+  dashboard:
+    enabled: true
+  # Reliability targets the alerts are derived from.
+  slo:
+    availabilityTarget: 0.99    # 99% of contact submissions succeed
+    latencyP95Seconds: 0.5      # p95 page latency at the edge
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
