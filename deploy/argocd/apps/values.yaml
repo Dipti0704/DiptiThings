@@ -6,5 +6,6 @@ targetRevision: main
 charts:
   traefik: 42.0.0
   kubePrometheusStack: 92.10.1
+  prometheusOperatorCrds: 32.0.1   # operator v0.94.1, matches the stack
   sealedSecrets: 2.20.0
   metricsServer: 3.14.0

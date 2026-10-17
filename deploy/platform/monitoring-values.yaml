@@ -1,5 +1,8 @@
 # kube-prometheus-stack trimmed for a single-node laptop cluster.
 
+crds:
+  enabled: false   # installed by the prometheus-crds Argo CD app
+
 # Control-plane components in kind do not expose metrics on reachable
 # addresses; scraping them would only produce permanently-down targets.
 kubeEtcd: { enabled: false }

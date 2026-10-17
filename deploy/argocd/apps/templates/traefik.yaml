@@ -4,7 +4,7 @@ metadata:
   name: traefik
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-wave: "-3"
   finalizers: [resources-finalizer.argocd.argoproj.io]
 spec:
   project: default
@@ -17,6 +17,14 @@ spec:
         service:
           spec:
             type: NodePort
+        providers:
+          kubernetesIngress:
+            # NodePort services have no load-balancer address to copy; publish
+            # loopback so Ingress status (and Argo CD health) is populated.
+            publishedService:
+              enabled: false
+            ingressEndpoint:
+              ip: 127.0.0.1
         ports:
           web:
             nodePort: 30080
