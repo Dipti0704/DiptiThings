@@ -12,7 +12,6 @@ type Metrics = {
 
 function createMetrics(): Metrics {
   const registry = new client.Registry();
-  registry.setDefaultLabels({ service: 'portfolio' });
   client.collectDefaultMetrics({ register: registry });
 
   new client.Gauge({
