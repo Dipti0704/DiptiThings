@@ -1,0 +1,14 @@
+.git
+.github
+.next
+node_modules
+deploy
+docs
+tests
+scripts
+coverage
+*.md
+.env*
+Dockerfile
+.dockerignore
+Makefile
