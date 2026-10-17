@@ -1,0 +1,14 @@
+# Extend the default rules. SealedSecret ciphertext is asymmetrically
+# encrypted for the in-cluster controller and is safe to commit, but its
+# high entropy trips the generic key rule.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Sealed Secrets ciphertext"
+paths = [
+  '''deploy/platform/secrets/.*\.yaml''',
+  '''deploy/envs/.*/values\.yaml''',
+]
+regexes = ['''Ag[A-Za-z0-9+/=]{300,}''']
+condition = "AND"
