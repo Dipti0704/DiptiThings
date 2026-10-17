@@ -1,0 +1,86 @@
+{{- if and .Values.monitoring.prometheusRule.enabled (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1") }}
+{{- $fullname := include "portfolio.fullname" . }}
+{{- $ns := .Release.Namespace }}
+{{- $edge := printf "service=~\"%s-%s-.*@kubernetes\"" $ns $fullname }}
+{{- $budget := subf 1 .Values.monitoring.slo.availabilityTarget | printf "%.4f" }}
+{{- $runbook := "https://github.com/Dipti0704/DiptiThings/blob/main/docs/RUNBOOK.md" }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ $fullname }}
+  labels:
+    {{- include "portfolio.labels" . | nindent 4 }}
+spec:
+  groups:
+    - name: portfolio.sli
+      rules:
+        # Share of contact submissions that reached Telegram (user success).
+        - record: portfolio:contact_success:ratio_rate5m
+          expr: |
+            sum(rate(contact_submissions_total{namespace="{{ $ns }}",outcome="delivered"}[5m]))
+            /
+            clamp_min(sum(rate(contact_submissions_total{namespace="{{ $ns }}",outcome=~"delivered|delivery_failed"}[5m])), 1e-9)
+        - record: portfolio:contact_success:ratio_rate1h
+          expr: |
+            sum(rate(contact_submissions_total{namespace="{{ $ns }}",outcome="delivered"}[1h]))
+            /
+            clamp_min(sum(rate(contact_submissions_total{namespace="{{ $ns }}",outcome=~"delivered|delivery_failed"}[1h])), 1e-9)
+        - record: portfolio:edge_latency:p95_5m
+          expr: |
+            histogram_quantile(0.95, sum by (le) (rate(traefik_service_request_duration_seconds_bucket{ {{- $edge -}} }[5m])))
+        - record: portfolio:edge_5xx:ratio_rate5m
+          expr: |
+            sum(rate(traefik_service_requests_total{ {{- $edge -}},code=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(traefik_service_requests_total{ {{- $edge -}} }[5m])), 1e-9)
+    - name: portfolio.alerts
+      rules:
+        - alert: PortfolioContactErrorBudgetBurn
+          # Multi-window burn rate: 14.4x the allowed error rate over both 5m
+          # and 1h means ~2% of a 30-day budget is gone in an hour.
+          expr: |
+            (1 - portfolio:contact_success:ratio_rate5m) > (14.4 * {{ $budget }})
+            and
+            (1 - portfolio:contact_success:ratio_rate1h) > (14.4 * {{ $budget }})
+          for: 2m
+          labels: { severity: critical }
+          annotations:
+            summary: Contact form submissions are failing faster than the {{ .Values.monitoring.slo.availabilityTarget }} SLO allows
+            runbook_url: {{ $runbook }}#contact-delivery-failing
+        - alert: PortfolioHighEdgeLatency
+          expr: portfolio:edge_latency:p95_5m > {{ .Values.monitoring.slo.latencyP95Seconds }}
+          for: 10m
+          labels: { severity: warning }
+          annotations:
+            summary: p95 latency at the ingress is above {{ .Values.monitoring.slo.latencyP95Seconds }}s
+            runbook_url: {{ $runbook }}#high-latency
+        - alert: PortfolioEdge5xx
+          expr: portfolio:edge_5xx:ratio_rate5m > 0.05
+          for: 5m
+          labels: { severity: critical }
+          annotations:
+            summary: More than 5% of requests to the portfolio return 5xx
+            runbook_url: {{ $runbook }}#5xx-errors
+        - alert: PortfolioReplicasUnavailable
+          expr: |
+            kube_deployment_status_replicas_available{namespace="{{ $ns }}",deployment="{{ $fullname }}"}
+            < kube_deployment_spec_replicas{namespace="{{ $ns }}",deployment="{{ $fullname }}"}
+          for: 5m
+          labels: { severity: warning }
+          annotations:
+            summary: Portfolio has fewer available replicas than desired (bad rollout or crash loop)
+            runbook_url: {{ $runbook }}#replicas-unavailable
+        - alert: PortfolioPodRestarting
+          expr: increase(kube_pod_container_status_restarts_total{namespace="{{ $ns }}",container="portfolio"}[15m]) > 2
+          labels: { severity: warning }
+          annotations:
+            summary: Pod {{ "{{ $labels.pod }}" }} restarted more than twice in 15 minutes
+            runbook_url: {{ $runbook }}#pod-restarting
+        - alert: PortfolioMetricsDown
+          expr: absent(up{namespace="{{ $ns }}",service="{{ $fullname }}"} == 1)
+          for: 5m
+          labels: { severity: critical }
+          annotations:
+            summary: Prometheus cannot scrape any portfolio pod
+            runbook_url: {{ $runbook }}#metrics-down
+{{- end }}

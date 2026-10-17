@@ -1,0 +1,61 @@
+# kube-prometheus-stack trimmed for a single-node laptop cluster.
+
+# Control-plane components in kind do not expose metrics on reachable
+# addresses; scraping them would only produce permanently-down targets.
+kubeEtcd: { enabled: false }
+kubeScheduler: { enabled: false }
+kubeControllerManager: { enabled: false }
+kubeProxy: { enabled: false }
+
+prometheus:
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [prometheus.localtest.me]
+  prometheusSpec:
+    retention: 2d
+    # Discover ServiceMonitors/PrometheusRules from every namespace,
+    # not only those labelled for this Helm release.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    resources:
+      requests: { cpu: 100m, memory: 400Mi }
+      limits: { memory: 1Gi }
+
+alertmanager:
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [alertmanager.localtest.me]
+  alertmanagerSpec:
+    resources:
+      requests: { cpu: 10m, memory: 32Mi }
+      limits: { memory: 128Mi }
+
+grafana:
+  # Admin credentials come from a SealedSecret (deploy/platform/secrets),
+  # so nothing random is generated on each render (no Argo CD drift).
+  admin:
+    existingSecret: grafana-admin
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [grafana.localtest.me]
+  sidecar:
+    dashboards:
+      searchNamespace: ALL
+  additionalDataSources:
+    - name: Jaeger
+      type: jaeger
+      uid: jaeger
+      url: http://jaeger.tracing.svc.cluster.local:16686
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 384Mi }
+
+prometheusOperator:
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { memory: 256Mi }

@@ -1,0 +1,25 @@
+# App of apps: the only object applied by hand. Everything else is declared
+# under deploy/argocd/apps and reconciled from Git by Argo CD.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Dipti0704/DiptiThings.git
+    targetRevision: devops/k8s-ci-observability
+    path: deploy/argocd/apps
+    helm:
+      valuesObject:
+        targetRevision: devops/k8s-ci-observability
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
