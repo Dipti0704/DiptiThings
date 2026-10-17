@@ -15,6 +15,6 @@ echo "→ contact submission"
 curl -sS -w "\nHTTP %{http_code}\n" -X POST "$BASE/api/contact" \
   -H 'content-type: application/json' \
   -d '{"name":"Smoke Test","email":"smoke@example.com","phone":"0000000000","message":"automated smoke test"}'
-echo "→ metrics hidden from the ingress"
+echo "→ metrics endpoint (expect 403 through the ingress, 200 in-cluster)"
 code="$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/metrics")"
 echo "/api/metrics → $code"

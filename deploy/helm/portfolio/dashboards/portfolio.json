@@ -70,7 +70,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (code) (rate(traefik_service_requests_total{service=~\"portfolio-portfolio-.*@kubernetes\"}[5m]))",
+          "expr": "sum by (code) (rate(traefik_service_requests_total{exported_service=~\"portfolio-portfolio-.*@kubernetes\"}[5m]))",
           "legendFormat": "{{code}}",
           "refId": "A"
         }

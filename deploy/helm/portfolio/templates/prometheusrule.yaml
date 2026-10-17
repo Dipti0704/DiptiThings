@@ -1,7 +1,7 @@
 {{- if and .Values.monitoring.prometheusRule.enabled (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1") }}
 {{- $fullname := include "portfolio.fullname" . }}
 {{- $ns := .Release.Namespace }}
-{{- $edge := printf "service=~\"%s-%s-.*@kubernetes\"" $ns $fullname }}
+{{- $edge := printf "exported_service=~\"%s-%s-.*@kubernetes\"" $ns $fullname }}
 {{- $budget := subf 1 .Values.monitoring.slo.availabilityTarget | printf "%.4f" }}
 {{- $runbook := "https://github.com/Dipti0704/DiptiThings/blob/main/docs/RUNBOOK.md" }}
 apiVersion: monitoring.coreos.com/v1
@@ -13,6 +13,8 @@ metadata:
 spec:
   groups:
     - name: portfolio.sli
+      # Traefik's own "service" label is renamed to exported_service because
+      # the scrape target already carries service="traefik-metrics".
       rules:
         # Share of contact submissions that reached Telegram (user success).
         - record: portfolio:contact_success:ratio_rate5m
