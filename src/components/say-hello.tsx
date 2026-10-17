@@ -1,3 +1,4 @@
+import ContactForm from "@/components/contact/ContactForm";
 import { site } from "@/lib/site";
 
 export function SayHello() {
@@ -64,6 +65,10 @@ export function SayHello() {
             accent
           />
         </ul>
+
+        <div className="mt-14 max-w-3xl rounded-2xl border border-background/10 bg-background p-2 text-foreground">
+          <ContactForm />
+        </div>
       </div>
     </section>
   );
