@@ -17,3 +17,6 @@ ingress:
 secret:
   sealed:
     encryptedData: {}
+probes:
+  readiness:
+    path: /api/does-not-exist
