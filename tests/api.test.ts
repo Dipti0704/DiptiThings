@@ -92,4 +92,12 @@ describe('metrics endpoint', () => {
     expect(body).toContain('app_build_info');
     expect(body).toContain('contact_submissions_total');
   });
+
+  it('reports whether contact delivery is configured', async () => {
+    vi.stubEnv('CONTACT_DELIVERY', 'telegram');
+    vi.stubEnv('TELEGRAM_BOT_TOKEN', '');
+    expect(await (await metricsRoute()).text()).toMatch(/^contact_delivery_configured 0$/m);
+    vi.stubEnv('CONTACT_DELIVERY', 'log');
+    expect(await (await metricsRoute()).text()).toMatch(/^contact_delivery_configured 1$/m);
+  });
 });

@@ -27,6 +27,13 @@ server:
     enabled: true
     ingressClassName: traefik
 
+# App health/sync metrics for the platform alerts (argocd_app_info etc.).
+controller:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
 dex:
   enabled: false
 notifications:

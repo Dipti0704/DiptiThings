@@ -1,4 +1,5 @@
 import { trace } from '@opentelemetry/api';
+import client from 'prom-client';
 import * as z from 'zod';
 
 import { logger } from '@/lib/observability/logger';
@@ -55,6 +56,19 @@ export function contactDeliveryConfigured(): boolean {
     deliveryMode() === 'log' ||
     Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID)
   );
+}
+
+// Evaluated on every scrape so a missing secret is alertable, not just
+// visible in /api/ready.
+if (!metrics.registry.getSingleMetric('contact_delivery_configured')) {
+  new client.Gauge({
+    name: 'contact_delivery_configured',
+    help: '1 when contact delivery has the configuration it needs, else 0',
+    registers: [metrics.registry],
+    collect() {
+      this.set(contactDeliveryConfigured() ? 1 : 0);
+    },
+  });
 }
 
 function formatMessage(data: ContactData) {

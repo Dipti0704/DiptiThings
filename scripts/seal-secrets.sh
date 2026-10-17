@@ -3,6 +3,7 @@
 # ciphertext into Git-tracked files. Plain-text values never touch the repo.
 #
 #   TELEGRAM_BOT_TOKEN=... TELEGRAM_CHAT_ID=... scripts/seal-secrets.sh portfolio
+#   TELEGRAM_BOT_TOKEN=... TELEGRAM_CHAT_ID=... scripts/seal-secrets.sh alerting
 #   scripts/seal-secrets.sh grafana        # generates a random admin password
 set -euo pipefail
 
@@ -26,6 +27,18 @@ case "${1:-}" in
       "$ROOT/deploy/envs/local/values.yaml"
     echo "updated deploy/envs/local/values.yaml — commit and push to deploy"
     ;;
+  alerting)
+    # Alertmanager reads these as files (bot_token_file / chat_id_file).
+    # Without real values a placeholder keeps Alertmanager running; Telegram
+    # rejects it and alertmanager_notifications_failed_total shows the gap.
+    token="${TELEGRAM_BOT_TOKEN:-not-configured}"
+    chat="${TELEGRAM_CHAT_ID:-0}"
+    kubectl create secret generic alertmanager-telegram --namespace monitoring \
+      --from-literal=bot-token="$token" --from-literal=chat-id="$chat" \
+      --dry-run=client -o yaml |
+      kubeseal --cert "$CERT" --format yaml > "$ROOT/deploy/platform/secrets/alertmanager-telegram.yaml"
+    echo "wrote deploy/platform/secrets/alertmanager-telegram.yaml — commit and push to deploy"
+    ;;
   grafana)
     password="${GRAFANA_ADMIN_PASSWORD:-$(openssl rand -base64 24)}"
     kubectl create secret generic grafana-admin --namespace monitoring \
@@ -42,7 +55,7 @@ case "${1:-}" in
     echo "private sealing key saved to .secrets/ (git-ignored) — keep it safe"
     ;;
   *)
-    echo "usage: $0 portfolio|grafana|backup-key" >&2
+    echo "usage: $0 portfolio|alerting|grafana|backup-key" >&2
     exit 1
     ;;
 esac

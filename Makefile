@@ -1,4 +1,4 @@
-.PHONY: help bootstrap seal-portfolio seal-grafana backup-key status urls smoke destroy image
+.PHONY: help bootstrap seal-portfolio seal-alerting seal-telegram seal-grafana backup-key status urls smoke destroy image
 
 help:            ## list targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-16s %s\n", $$1, $$2}'
@@ -8,6 +8,11 @@ bootstrap:       ## create kind cluster, install Argo CD, apply root app
 
 seal-portfolio:  ## seal Telegram credentials (needs TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)
 	scripts/seal-secrets.sh portfolio
+
+seal-alerting:   ## seal Alertmanager's Telegram receiver credentials
+	scripts/seal-secrets.sh alerting
+
+seal-telegram: seal-portfolio seal-alerting ## seal Telegram for both the app and Alertmanager
 
 seal-grafana:    ## seal a Grafana admin password
 	scripts/seal-secrets.sh grafana

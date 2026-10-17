@@ -194,7 +194,7 @@
       },
       "targets": [
         {
-          "expr": "portfolio:contact_success:ratio_rate1h",
+          "expr": "1 - portfolio:contact_errors:ratio_rate1h",
           "legendFormat": "1h",
           "refId": "A"
         }
