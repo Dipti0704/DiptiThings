@@ -1,0 +1,188 @@
+# Source change → checked → multi-arch image (GHCR) → scanned → deployed to a
+# throwaway kind cluster and smoke-tested → image tag committed to Git.
+# Argo CD in the local cluster then picks up that commit and rolls it out.
+name: release
+
+on:
+  push:
+    branches: [main, "devops/**"]
+    paths-ignore:
+      - "deploy/envs/**"   # tag bumps written by this workflow
+      - "docs/**"
+      - "**.md"
+  workflow_dispatch:
+
+# One release per branch at a time, so tag bumps never race each other.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: ghcr.io/dipti0704/diptithings
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    name: build (${{ matrix.platform }})
+    needs: ci
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          # Native arm64 runner: the local kind node on Apple Silicon is arm64.
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            APP_VERSION=sha-${{ github.sha }}
+            GIT_SHA=${{ github.sha }}
+            BUILD_TIME=${{ github.event.head_commit.timestamp }}
+          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
+          provenance: mode=max
+          sbom: true
+      - name: Export digest
+        run: |
+          mkdir -p digests
+          touch "digests/${DIGEST#sha256:}"
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: digest-${{ strategy.job-index }}
+          path: digests/*
+          retention-days: 1
+
+  publish:
+    name: tag multi-arch image · scan
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      digest: ${{ steps.manifest.outputs.digest }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: digest-*
+          path: digests
+          merge-multiple: true
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        run: echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - name: Create manifest list
+        id: manifest
+        working-directory: digests
+        run: |
+          docker buildx imagetools create -t "$IMAGE:${{ steps.meta.outputs.tag }}" \
+            $(printf "$IMAGE@sha256:%s " *)
+          digest=$(docker buildx imagetools inspect "$IMAGE:${{ steps.meta.outputs.tag }}" --format '{{json .Manifest}}' | jq -r .digest)
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "### Image" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`$IMAGE:${{ steps.meta.outputs.tag }}@$digest\`" >> "$GITHUB_STEP_SUMMARY"
+      - name: Trivy image scan (fail on fixable critical CVEs)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ env.IMAGE }}@${{ steps.manifest.outputs.digest }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+
+  e2e:
+    name: deploy to ephemeral kind · smoke test
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: helm/kind-action@1544676c07bb3570fcb70166beaa07c4528fd4aa # v1.15.1
+        with:
+          cluster_name: ci
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+      - name: Image pull credentials (package may still be private)
+        run: |
+          kubectl create namespace portfolio
+          kubectl -n portfolio create secret docker-registry ghcr \
+            --docker-server=ghcr.io --docker-username="${{ github.actor }}" \
+            --docker-password="${{ secrets.GITHUB_TOKEN }}"
+      - name: Install chart (atomic — rolls back if pods never become ready)
+        run: |
+          helm upgrade --install portfolio deploy/helm/portfolio -n portfolio \
+            -f deploy/envs/local/values.yaml \
+            --set image.tag=${{ needs.publish.outputs.tag }} \
+            --set image.digest=${{ needs.publish.outputs.digest }} \
+            --set 'imagePullSecrets[0].name=ghcr' \
+            --set ingress.enabled=false \
+            --set config.CONTACT_DELIVERY=log \
+            --set config.OTEL_EXPORTER_OTLP_ENDPOINT= \
+            --atomic --wait --timeout 5m
+      - name: Smoke test through the Service
+        run: |
+          kubectl -n portfolio port-forward svc/portfolio 8080:80 &
+          sleep 3
+          scripts/smoke.sh http://localhost:8080 "${{ github.sha }}"
+      - name: Diagnostics on failure
+        if: failure()
+        run: |
+          kubectl -n portfolio get all,events
+          kubectl -n portfolio logs -l app.kubernetes.io/name=portfolio --tail=100
+
+  promote:
+    name: commit image tag for Argo CD
+    needs: [publish, e2e]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Update deploy/envs/local/values.yaml
+        env:
+          TAG: ${{ needs.publish.outputs.tag }}
+          DIGEST: ${{ needs.publish.outputs.digest }}
+        run: |
+          yq -i ".image.tag = strenv(TAG) | .image.digest = strenv(DIGEST)" deploy/envs/local/values.yaml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "deploy(local): portfolio $TAG" -m "Image: $IMAGE:$TAG@$DIGEST" -m "Source: ${{ github.sha }} (run ${{ github.run_id }})"
+          # A newer commit may have landed while we built; rebase and retry.
+          for i in 1 2 3; do git pull --rebase && git push && exit 0; sleep 5; done
+          exit 1
