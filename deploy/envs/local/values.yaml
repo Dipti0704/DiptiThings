@@ -4,8 +4,8 @@
 # image.tag / image.digest are updated by CI (.github/workflows/release.yml)
 # after the image is built, scanned and pushed — do not edit them by hand.
 image:
-  tag: sha-410d7b4
-  digest: "sha256:ac330ea4b51ccb59f68e0f5065300b019ca8b7fbdc4df8bfee76b1226ac4c864"
+  tag: sha-ff32d0a
+  digest: "sha256:0f9f52c7c618fcc67cb539ca01c35bcf851a0bca574c2a36b254cd14fc739b1e"
 config:
   APP_ENV: local
   LOG_LEVEL: info
