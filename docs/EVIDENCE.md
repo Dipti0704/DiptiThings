@@ -144,6 +144,42 @@ Following [RUNBOOK.md › Fault demo](RUNBOOK.md#fault-demo-bad-release-and-reco
    - Argo CD returned to `Healthy Synced` on the revert revision.
    - The broken pod was terminated, and 2/2 old-version pods remained.
 
+## 8. Alerting pipeline (Prometheus → Alertmanager → Telegram)
+
+**Problem found:**
+- The default kube-prometheus-stack config routed every alert to a `null` receiver, so nothing
+  was ever delivered.
+- The only firing alerts were noise that is always on in kind (`NodeClockNotSynchronising`).
+- The contact SLO ratio could report a false 100% error rate at zero traffic.
+
+**Fixed in commit `71245f2`:**
+- severity routing to a Telegram receiver, with credentials as a SealedSecret
+- inhibition rules
+- corrected SLO math
+- 7 new app alerts and 8 platform alerts (Argo CD, Traefik, sealed-secrets, Jaeger)
+- metrics from Argo CD and sealed-secrets
+
+**Gitleaks fix (commit `8bdbd5b`):** the Gitleaks GitHub Action ran an older gitleaks (v8.24.3)
+that ignored the allowlist syntax, so it flagged the sealed ciphertext.
+
+**Verification:**
+
+| Check | Result |
+|---|---|
+| `amtool config routes test severity=critical` | `telegram` |
+| `amtool config routes test severity=warning` | `telegram` |
+| `amtool config routes test alertname=Watchdog` / `severity=info` | `null` |
+| Rule groups `portfolio.alerts` (13), `portfolio.sli` (6 recording), `platform.gitops` (4), `platform.runtime` (3), `sealed-secrets-controller.rules` (1) | all `health=ok` |
+| New scrape targets | `argocd-application-controller-metrics up`, `sealed-secrets-controller-metrics up` |
+| Zero-traffic contact error ratio | `NaN` (no false alert) |
+| Real alert end to end | `contact_delivery_configured 0` → `PortfolioContactDeliveryNotConfigured` firing in Prometheus → active in Alertmanager with receiver `telegram` |
+| Delivery attempt | Alertmanager log: `Notify attempt failed ... integration=telegram[0] ... err="telegram: Not Found (404)"`, expected while the placeholder token is sealed. `AlertmanagerFailedToSendAlerts` fires, so the gap is visible. |
+
+Once real credentials are sealed (`TELEGRAM_BOT_TOKEN=... TELEGRAM_CHAT_ID=... make seal-telegram`
+and push):
+- the same alerts arrive in Telegram
+- `PortfolioContactDeliveryNotConfigured` and the Alertmanager send-failure alerts resolve
+
 ## Notes and limitations of this evidence
 
 - Commit SHAs before `f603948` were rewritten once, to remove commit-message trailers. Argo CD's

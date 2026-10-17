@@ -69,7 +69,7 @@ kubectl get applications -n argocd -w
 
 ```bash
 make seal-grafana                                              # Grafana admin password
-TELEGRAM_BOT_TOKEN=... TELEGRAM_CHAT_ID=... make seal-portfolio  # contact form
+TELEGRAM_BOT_TOKEN=... TELEGRAM_CHAT_ID=... make seal-telegram   # contact form + Alertmanager receiver
 make backup-key                                                # keep the sealing key (git-ignored)
 git add deploy && git commit -m "chore: seal secrets" && git push
 ```
@@ -124,8 +124,10 @@ make destroy
 - Sealed secrets are tied to the cluster's key. A recreated cluster needs `make backup-key`'s
   file restored (the bootstrap script does this) or the secrets re-sealed.
 - The GHCR package must be public, or an `imagePullSecret` added, for kind to pull it.
-- Jaeger keeps traces in memory, and Prometheus retention is 2 days. Alertmanager has no
-  receivers configured; alerts can be viewed in its UI.
+- Jaeger keeps traces in memory, and Prometheus retention is 2 days.
+- Alertmanager sends warning and critical alerts to Telegram. Until real credentials are sealed,
+  delivery fails visibly (`AlertmanagerFailedToSendAlerts`). `Watchdog` is not wired to an
+  external dead man's switch.
 - Vercel deployment from the baseline still works but is separate from this pipeline.
 
 ## Customization
