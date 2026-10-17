@@ -85,7 +85,7 @@ All hostnames resolve to `127.0.0.1` via `localtest.me`; the cluster only listen
 |---|---|---|
 | Portfolio | http://portfolio.localtest.me | — |
 | Argo CD | http://argocd.localtest.me | `admin` / `kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' \| base64 -d` |
-| Grafana | http://grafana.localtest.me | `admin` / password printed by `make seal-grafana` |
+| Grafana | http://grafana.localtest.me | `admin` / `kubectl -n monitoring get secret grafana-admin -o jsonpath='{.data.admin-password}' \| base64 -d` |
 | Prometheus | http://prometheus.localtest.me | — |
 | Alertmanager | http://alertmanager.localtest.me | — |
 | Jaeger | http://jaeger.localtest.me | — |
